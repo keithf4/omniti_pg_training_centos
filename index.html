@@ -463,6 +463,287 @@ archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup
 
 
                     <section>
+                        <h2>Setup Replication - Advanced/Hybrid</h2>
+                        <ul style="font-size:25px;">
+                            <li>Start new cluster using manual method instead of new initi.d script</li>
+                            <ul>
+                                <li>Become postgres user</li>
+                                <pre style="font-size:18px">/usr/pgsql-9.3/bin/pg_ctl start -D /var/lib/pgsql/9.3/omnislave</pre>
+                                <li>Will not autostart on boot</li>
+                                <li>Cannot connect to this slave  (hot_standby = off in postgresql.conf)</li>
+                                <li>Should see two entries for streaming slaves when checking from master now</li>
+                                <li>After a few minutes, should start seeing archived WAL files cleaned up automatically</li>
+                            </ul>
+                            <li>Check logs</li>
+                            <ul>
+                                <li>Replays WAL archives first using restore_command</li>
+                                <li>Connects to primary for streaming replication</li>
+                                <li>Sees it’s streaming replication, so omnipitr-restore kills itself</li>
+                            </ul>
+                        </ul>
+                        <aside class="notes">
+                            Pause for questions after Check Logs main point to allow archive_cleanup_command to work
+                        </aside>
+                    </section>
+
+
+                    <section>
+                        <h2>Non-streaming Replication (pre-9.0)</h2>
+                        <ul>
+                            <li>Remove/comment out “primary_conninfo” line from omnislave recovery.conf</li>
+                            <li>Remove “-sr” flag from restore_command</li>
+                            <li>Restart slave</li>
+                            <pre>/usr/pgsql-9.3/bin/pg_ctl restart -m fast -D /var/lib/pgsql/9.3/omnislave/</pre>
+                            <li>archive_timeout of master determines how far behind slave could possibly be</li>
+                        </ul>
+                    </section>
+
+
+                    <section>
+                        <h2>A Note on SELinux</h2>
+                        <ul>
+                            <li>Enabled by default in CentOS 6.5</li>
+                            <li>omnipitr uses rsync</li>
+                            <li>SELinux blocks the archive_command using rsync</li>
+                            <ul>
+                                <li>Obscure error 3072 in log</li>
+                            </ul>
+                            <li>Configure SELinux to allow postgres to rsync</li>
+<pre>
+sudo yum install policycoreutils-python-2.0.83-19.39.el6.x86_64
+sudo semanage fcontext -a -t bin_t "/usr/bin/rsync"
+sudo restorecon -R -v /usr/bin/rsync
+sudo setsebool -P postgresql_can_rsync on
+</pre>
+                            <li>Just disable SELinux if you don’t need it (did this in VM already)</li>
+                            <ul>
+                                <li>Edit /etc/sysconfig/selinux</li>
+                                <li>SELINUX=disabled</li>
+                                <li>Restart server</li>
+                            </ul>
+                    </section>
+
+
+                    <section>
+                        <h2>Backup - pg_dump/all</h2>
+                        <div id="li30">
+                            <ul style="font-size:25px;">
+                                <li>pg_dumpall</li>
+                                <ul>
+                                    <li>Dumps all databases in cluster in plaintext format</li>
+                                    <li>Can dump only role data</li>
+                                    <li>Use psql to restore backup</li>
+                                    <li>Restores entire cluster. No object filtering options.</li>
+                                    <li>Dump only roles and/or tablespaces (cluster-wide objects)</li>
+                                    <pre style="font-size:18px">pg_dumpall -g -f globals.sql -v</pre>
+                                </ul>
+                                <li>pg_dump</li>
+                                <ul>
+                                    <li>Backs up individual databases in cluster</li>
+                                    <li>Does not back up roles or tablespaces, but does back up object privileges of those roles.</li>
+                                    <li>Use pg_restore to restore binary backups</li>
+                                    <li>Provides binary backup format that can make restore easier</li>
+                                    <li>Can restore individual schemas or tables instead of entire cluster</li>
+                                <pre style="font-size:18px">pg_dump -Fc training -f training.pgr -v</pre>
+                            </ul>
+                        </div>
+                    </section>
+
+
+                    <section>
+                        <h2>Backup - File System</h2>
+                        <div id="li30">
+                            <ul style="font-size:25px;">
+                                <li>Basic file system backup (basically what we did to create slave system)</li>
+                                <ul>
+                                    <li>pg_start_backup() -&gt; copy all files -&gt; pg_stop_backup()</li>
+                                </ul>
+                                <li>Omnipitr</li>
+                                <li>Set dst-backup (-db) option in archive_command (location does not exist)</li>
+<pre style="font-size:18px">
+archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/data
+  -dl gzip=/var/lib/pgsql/9.3/backups/walarchive 
+  -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-archive-^Y-^m-^d.log -v 
+  -s /var/lib/pgsql/9.3/data/pg_log/state -db /var/lib/pgsql/9.3/backups/dst-backup "%p"'
+</pre>
+                                <li>When backup is run, this dir is created to hold WAL files needed for consistent backup</li>
+                                <li>Same use as -X option to pg_basebackup</li>
+                                <li>pg_reload_conf()</li>
+                                <li>Run omnipitr-backup-master</li>
+                                <li>Need to install Perl SHA library</li>
+<pre style="font-size:18px">sudo yum install perl-Digest-SHA.x86_64</pre>
+<pre style="font-size:18px">
+/opt/omnipitr/bin/omnipitr-backup-master -D /var/lib/pgsql/9.3/data 
+  -x /var/lib/pgsql/9.3/backups/dst-backup -dl gzip=/var/lib/pgsql/9.3/backups 
+  -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-backup-master-^Y-^m-^d.log 
+  -v -dg SHA-512
+</pre>
+                                </ul>    
+                        </div>
+                    </section>
+
+
+                    <section>
+                        <h2>Restore - pg_restore</h2>
+                        <div id="li30">
+                            <ul style="font-size:25px;">
+                                <li>As training user, create new database in home folder</li>
+<pre style="font-size:18px">
+mkdir mydb
+/usr/pgsql-9.3/bin/initdb -D /home/training/mydb
+Edit port in postgresql.conf - port = 5444
+/usr/pgsql-9.3/bin/pg_ctl -D /home/training/mydb start
+</pre>
+                                <li>Automatically made role “training”</li>
+                                <li>psql used to restore pg_dumpall or plaintext version of pg_dump</li>
+                                <ul>
+                                    <li>Restore roles before restoring database so permissions are set properly</li>
+                                    <pre style="font-size:18px">psql -p 5444 -d postgres -f globals.sql -a</pre>
+                                </ul>
+                                <li>pg_restore can be used to restore binary dump of pg_dump</li>
+<pre style="font-size:18px">
+psql -p 5444 postgres
+postgres=# create database new_training;
+pg_restore -p 5444 -d new_training -v training.pgr
+</pre>
+                                <li>Smaller backups & more flexible restore</li>
+                                <li>Must recreate all indexes & constraints</li>
+                                <li>Stop this instance</li>
+                                <pre style="font-size:18px">/usr/pgsql-9.3/bin/pg_ctl stop -m fast -D mydb</pre>
+                            </ul>
+                        </div>
+                    </section>
+
+
+                    <section>
+                        <h2>Restore - File System</h2>
+                        <div id="li30">
+                            <ul style="font-size:25px;">
+                                <li>Create a new data directory as postgres user</li>
+                                <pre style="font-size:18px">mkdir /var/lib/pgsql/9.3/omnirestore</pre>
+                                <li>Untar the backup to it</li>
+<pre style="font-size:18px">
+cd /var/lib/pgsql/9.3/omnirestore
+tar xvzpf ../backups/localhost.localdomain-data-YYYY-MM-DD.tar.gz
+tar xvzpf ../backups/localhost.localdomain-xlog-YYYY-MM-DD.tar.gz
+chmod 700 data
+cd data
+</pre>
+                                <li>Change the port in postgresql.conf</li>
+                                <pre style="font-size:18px">port = 5444</pre>
+                                <li>Start it up</li>
+                                <pre style="font-size:18px">/usr/pgsql-9.3/bin/pg_ctl start -D /var/lib/pgsql/9.3/omnirestore/data</pre>
+                                <li>Much faster disaster recovery</li>
+                                <li>Less flexible restore options (all or nothing)</li>
+                            </ul>
+                        </div>
+                    </section>
+
+
+                    <section>
+                        <h2>Slave Lag</h2>
+                        <div id="li30">
+                            <ul style="font-size:25px;">
+                                <li>Slave lag</li>
+                                <ul>
+                                    <li>Monitor from slave (seconds behind)</li>
+                                    <pre style="font-size:18px">SELECT extract(epoch from now() - pg_last_xact_replay_timestamp()) AS slave_lag</pre>
+                                    <li>Monitor from master (if streaming) (bytes behind)</li>
+<pre style="font-size:18px">
+SELECT client_hostname
+    , client_addr
+    , pg_xlog_location_diff(pg_stat_replication.sent_location, 
+        pg_stat_replication.replay_location) AS byte_lag
+FROM pg_stat_replication;
+</pre>
+                                    <li>Use omnipitr-monitor to monitor a non-streaming, non-hot-standby slave</li>
+                                    <ul>
+                                        <li>Create state directory owned by postgres - /var/log/omnipitr</li>
+<pre style="font-size:18px">
+/opt/omnipitr/bin/omnipitr-monitor -c last-restore-age 
+  -l /var/lib/pgsql/9.3/omnislave/pg_log/omnipitr-restore-^Y-^m-^d.log 
+  -s /var/log/omnipitr/
+</pre>
+                                    </ul>
+                                </ul>
+                                <li>Backup monitor if using omnipitr-backup</li>
+<pre style="font-size:18px">
+/opt/omnipitr/bin/omnipitr-monitor -c last-backup-age 
+  -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-backup-master-^Y-^m-^d.log 
+  -s /var/log/omnipitr/
+</pre>
+                            </ul>
+                        </div>
+                    </section>
+
+
+                    <section>
+                        <h2>Monitoring</h2>
+                        <div id="li30">
+                            <ul style="font-size:25px;">
+                                <li>Active/Idle connections. Idle in transaction session times.</li>
+                                <li>Table statistics</li>
+                                <ul>
+                                    <li>Sequential scans vs index scans</li>
+                                    <li>Insert/Update/Delete rate</li>
+                                </ul>
+                                <li>Max oldest autovac freeze age</li> 
+                                <li>Transactions</li>
+                                <ul>
+                                    <li>Commits vs Rollbacks</li>
+                                </ul>
+                                <li>Database size</li> 
+                                <ul>
+                                    <li>Total Table Size vs Total Index Size</li>
+                                </ul>
+                                <li>Locks</li>
+                                <li>WAL file count (expected vs current)</li>
+                                <li><a href="http://www.nagios.org" target="_blank">Nagios</a></li>
+                                <ul>
+                                    <li><a href="http://bucardo.org/wiki/Check_postgres" target="_blank">check_postgres.pl</a></li>
+                                    <li>Disk space monitoring since you can’t predetermine the disk usage like in oracle</li>
+                                </ul>
+                                <li>Log/query analysis - <a href="http://dalibo.github.io/pgbadger/" target="_blank">pgbadger</a></li>
+                                <li>Critical functions - <a href="https://github.com/omniti-labs/pg_jobmon" target="_blank">pg_jobmon</a></li>
+                            </ul>
+                        </div>
+                    </section>
+                    
+
+                    <section>
+                        <h2>Upgrading</h2>
+                        <ul>
+                            <li>Dump/Restore</li>
+                            <ul>
+                                <li>Works on all versions</li>
+                                <li>Use the pg_dump binary of the upgrade target</li>
+                                <li>8.4+ has parallel pg_restore</li>
+                                <li>9.3+ has parallel pg_dump</li>
+                                <li>Same caveats mentioned previously (smaller dump/longer restore)</li>
+                            </ul>
+                            <li>pg_upgrade</li>
+                            <ul>
+                                <li>In-place upgrade of data files</li>
+                                <li>Works only for 8.4.7+ (all previous versions must dump/restore)</li>
+                                <li>OS w/ hard link support can greatly decrease upgrade time</li>
+                                <ul>
+                                    <li>Ex: 700GB upgrade in under 5 minutes</li>
+                                </ul>
+                            </ul>
+                        </ul>
+                    </section>
+
+
+                    <!--
+                    <section>
+                        <h2>Failover</h2>
+
+                    </section>
+                    -->
+                    <section>
+                        <h1>Final Questions?</h1>
+                    </section>
+
                 </div>
 
 		</div>
@@ -479,6 +760,7 @@ archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup
 				progress: true,
 				history: true,
 				center: true,
+                slideNumber: true,
 
 				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
 				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
