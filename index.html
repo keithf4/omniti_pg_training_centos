@@ -31,6 +31,9 @@
 			}
 		</script>
 
+        <style>
+            #li30 li { height:30px; line-height:30px }
+        </style>
 		<!--[if lt IE 9]>
 		<script src="lib/js/html5shiv.js"></script>
 		<![endif]-->
@@ -43,11 +46,424 @@
 			<!-- Any section element inside of this container is displayed as a slide -->
 			<div class="slides">
 				<section>
-
+                    <h2>PostgreSQL Administration</h2>
+                    <h4>The OmniTI Way</h4>
+                    <p>
+                    <small>Presented by <a href="http://keithf4.com" target="_blank">Keith Fiske</a> / <a href="http://twitter.com/keithf4" target="_blank">@keithf4</a></small>
+                    </p>
+                    <p>
+                    <small>Database Administrator @ <a href="http://www.omniti.com" target="_blank">OmniTI</a></small>
+                    </p>
+                    <p>
+                    <br/>
+                    <br/>
+                    <small>Follow along at <br/><a href="http://slides.keithf4.com/pgtraining_centos">http://slides.keithf4.com/pgtraining_centos</a></small>
+                    </p>
 				</section>
 
 
-			</div>
+                <section>
+                    <h2>OmniTI, Inc</h2>
+                    <p>
+                    <ul>
+                        <li>Full-stack support for high-traffic websites & applications</li>
+                        <ul>
+                            <li>Millions of users</li>
+                            <li>Terabytes of data</li>
+                            <li>Gilt, Etsy, Ora.TV, Freelotto</li>
+                        </ul>
+                        <li>Surge Conference</li>
+                        <ul>
+                            <li> <a href="http://omniti.com/surge">http://surge.omniti.com</a></li>
+                            <li> Annually in Sept</li>
+                        </ul>
+                    </p>
+                    </section>
+                    
+
+                    <section>
+                        <h2>What is PostgreSQL?</h2>
+                        <ul>
+                            <li>Open Source RDBMS</li>
+                            <li>Started at UC Berkley 1986, open sourced in 1996</li>
+                            <li>BSD-type License</li>
+                            <li>Follows SQL Standard very closely</li>
+                            <li>Third-party Plugin Support</li>
+                            <ul>
+                                <li>Procedural Languages</li>
+                                <ul>
+                                    <li>C, Java, Python, Perl, JavaScript, PHP, R, Ruby, etc</li>
+                                    <li>Extensions</li>
+                                    <li>Background Workers (>=9.3)</li>
+                                </ul>
+                            </ul>
+                            <li>Massive online community (mailing lists, irc, conferences)</li>
+                        </ul>
+                    </section>
+
+
+                    <section>
+                        <h2>Training VM</h2>
+                        <ul>
+                            <li>Login: training / postgres</li>
+                            <li>training user has sudo</li>
+                            <ul>
+                                <li>All commads shown with "sudo" are run by training user</li>
+                            </ul>
+                            <li>Shortcut to terminal along top bar</li>
+                            <li>Internet should work within VM (if it works externally)</li>
+                            <li>Clipboard should work between host & VM</li>
+                            <li>Take snapshot now & as many times as you'd like along the way</li>
+                        </ul>
+                    </section>
+
+
+                    <section>
+                        <h2>Installing PostgreSQL</h2>
+                        <ul>
+                            <li>Setup yum repo for your desired version</li>
+                            <ul>
+                                <li>Default for CentOS 6.5 is 8.4.20 (EOL)</li>
+                                <li><a href="http://www.postgresql.org/download/linux/redhat/" target="_blank">http://www.postgresql.org/download/linux/redhat/</a></li>
+                                <pre>sudo yum install http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm</pre>
+                            </ul>
+                            <li>Install PostgreSQL 9.3 & Contrib modules</li>
+                                <ul>
+                                    <li>sudo yum install postgresql93-server postgresql93-contrib</li>
+                                </ul>
+                            <li>No clusters automatically created and no initial automatic startup (Redhat policy)</li>
+                            <ul>
+<pre>
+service postgresql-9.3 initdb
+sudo chkconfig postgresql-9.3 on
+sudo service postgresql-9.3 start
+</pre>
+                            </ul>
+                        </ul>
+
+                    </section>
+
+
+                    <section>
+                        <h2>Create Role & Database</h2>
+                        <ul style="font-size:30px">
+                            <li>Become postgres system user</li>
+                            <pre>sudo su - postgres</pre>
+                            <li>Log into database (default postgres role & database already created)</li>
+                            <pre>psql</pre>
+                            <ul>
+                                <li>\? to see all available commands</li>
+                            </ul>
+                            <li>Create a role & database for yourself</li>
+<pre>
+CREATE ROLE training WITH LOGIN SUPERUSER;
+CREATE DATABASE training;
+</pre>
+                            <li>Should now be able to log into PostgreSQL as your training user</li>
+                            <li>Create replication role for later</li>
+                            <pre>CREATE ROLE replication WITH LOGIN REPLICATION;</pre>
+                            <ul>
+                                <li>Set password (rep_password)</li>
+                                <pre>\password replication</pre> 
+                            </ul>
+                        </ul>
+                        <aside class="notes">
+                            Recommend keeping second terminal open logged in as postgres user. Avoids having to exit and re-sudo throughout training
+                        </aside>
+                    </section>
+
+
+                    <section>
+                        <h2>Configuration - pg_hba.conf</h2>
+                        <ul style="font-size:30px;">
+                            <li style="margin:0; padding:0"><a href="http://www.postgresql.org/docs/9.3/static/auth-pg-hba-conf.html" target="_blank">http://www.postgresql.org/docs/9.3/static/auth-pg-hba-conf.html</a></li>
+                            <li>Find where your data directory is</li>
+                            <pre>training=# show data_directory;</pre>
+                            <li>Open pg_hba.conf file located in data directory (must be postgres user)</li>
+                            <li>All authentication into cluster is controlled by this file</li>
+                            <li>Evaluated in order top-down</li>
+                            <li>Default only allows local system users with matching role names (peer)</li>
+                            <li>Avoid "trust" if at all possible</li>
+                            <ul>
+                                <li>.pgpass file allows password authentication without having to type it every time</li>
+                                <li><a href="http://www.postgresql.org/docs/9.3/static/libpq-pgpass.html" target="_blank">http://www.postgresql.org/docs/9.3/static/libpq-pgpass.html</a></li>
+                            </ul>
+                                                        </ul>
+                        </ul>
+                    </section>
+
+                    
+                    <section>
+                        <h2>Configuration - pg_hba.conf</h2>
+                        <ul>
+                            <li>Create following line for later:</li>
+                            <pre>host        replication     replication        127.0.0.1/32            md5</pre>
+                            <li>Only requires a reload to put new HBA settings into place</li>
+                            <ul>
+<pre>
+training=# select pg_reload_conf();
+sudo service postgresql-9.3 reload
+</pre>
+                                <li>Check log file for SIGHUP & config change</li>
+
+                        </ul>
+                    </section>
+
+
+                    <section>
+                        <h2>Configuration - postgresql.conf</h2>
+                        <div id="li30">
+                            <ul style="font-size:25px;">
+                                <li>Main configuration file</li>
+                                <li>Important initial settings review (most require restart)</li>
+                                <ul >
+                                    <li>listen_address  (* - all IPs, whitelist your app servers)</li>
+                                    <li>max_connections (monitor active connections)</li>
+                                    <li>shared_buffers (8GB good starting point)</li>
+                                    <li>work_mem (2-5MB good starting point. The more RAM the better.)</li>
+                                    <li>maintenance_work_mem (1GB good starting point)</li>
+                                    <li>wal_level = hot_standby</li>
+                                    <li>effective_cache_size (50% RAM good starting point)</li>
+                                    <li>archive_mode = on</li>
+                                    <li>archive_command = ‘/bin/true’</li>
+                                    <li>archive_timeout = 60 (for demo purposes, usually higher)</li>
+                                    <li>max_wal_senders = 3</li>
+                                    <li>wal_keep_segments = 30</li>
+                                    <li>logging_collector = on</li>
+                                    <li>autovacuum_freeze_max_age = 1000000000  (no higher!)</li>
+                                </ul>
+                            </ul>
+                        </div>
+                    </section>
+
+
+                    <section>
+                        <h2>Configuration - postgresql.conf</h2>
+                        <div id="li30">
+                            <ul style="font-size:25px;">
+                                <li>Important secondary settings review (all only require reload)</li>
+                                <ul>
+                                    <li>checkpoint_segments = 30  (good starting point, check logs for warnings)</li>
+                                    <li>checkpoint_timeout = 5min (default, good starting point, check logs for warnings)</li>
+                                    <li>checkpoint_completion_target = 0.9</li>
+                                    <li>log_filename = 'postgresql-%Y-%m-%d.log'</li>
+                                    <li>log_min_duration_statement = 5000ms  (beware setting too low. can fill logs fast)</li>
+                                    <li>log_connections = on</li>
+                                    <li>log_disconnections = on</li>
+                                    <li>log_line_prefix = '%m [%r] [%p]: [l-%l] user=%u,db=%d,e=%e '</li>
+                                    <ul>
+                                        <li>%x & %v can be good for transaction tracking</li>
+                                    </ul>
+                                    <li>log_temp_files = 10240  (good starting point, 10MB)</li>
+                                    <li>autovacuum_vacuum_threshold = 500  (default too aggressive)</li>
+                                    <li>autovacuum_analyze_threshold = 500  (default too aggressive)</li>
+                                    <li>autovacuum_vacuum_scale_factor = 0.1  (default too mild)</li>
+                                    <li>autovacuum_analyze_scale_factor = 0.05  (default too mild)</li>
+                                </ul>
+                                <li>Restart postgresql to put all new settings into place</li>
+                                <pre style="font-size:20px;">sudo service postgresql-9.3 restart</pre>
+                                <li>If restart unsuccessful, check postgresql log files</li>
+                            </ul>
+                        </div>
+                        <aside class="notes">
+                            Mention log_rotation_size & log_filename are related in how log file re-use happens. Default (%a) would reuse old log file when that day comes around again next week). If the same log_filename already exists when it goes to role over, it will overwrite. If daily & will roleover in one day, add more to the log_filename (hours, minutes, seconds)
+                        </aside>
+                    </section>
+
+
+                    <section>
+                        <h2>Vacuums & Freezing</h2>
+                        <div id="li30">
+                            <ul style="font-size:25px;">
+                                <li><a href="http://www.postgresql.org/docs/9.3/static/routine-vacuuming.html" target="_blank">http://www.postgresql.org/docs/9.3/static/routine-vacuuming.html</a></li>
+                                <li>Multi-Version Currency Control (MVCC)</li>
+                                <ul>
+                                    <li>Updated/Deleted rows not actually deleted. Just marked unavailable.</li>
+                                    <li>Vacuum marks unavailable rows as re-usable space. Leads to bloat.</li>
+                                    <li>VACUUM FULL recovers disk space but locks table</li>
+                                    <li><a href="http://reorg.github.io" target="_blank">pg_repack</a> - Extension to reclaim disk space with minimal lock</li>
+                                    <li>Don’t overuse VACUUM FULL or pg_repack. </li>
+                                    <ul>
+                                        <li>Reusable space can be more efficient than reallocating new pages</li>
+                                    </ul>
+                                </ul>
+                                <li>Transaction ID Wraparound</li>
+                                <ul>
+                                    <li>Every row has transaction id (XID) value</li>
+                                    <li>Determines visibility to current transactions</li>
+                                    <li>32-bit number, so wraparound is possible after 4 billion transactions</li>
+                                    <ul>
+                                        <li>2 billion transactions newer than current & 2 billion older</li>
+                                    </ul>
+                                    <li>Reserved, FrozenXID always older than all XIDs</li>
+                                    <li>VACUUM resets all rows for given table to FrozenXID</li>
+                                    <li>autovacuum_freeze_max_age - when table XID value reaches this, a VACUUM is forced (even if autovac turned off).</li>
+                                </ul>
+                            </ul>
+                        </div>
+                    </section>
+
+
+                    <section>
+                        <h2>Setup Replication - Basic</h2>
+                        <ul style="font-size:30px;">
+                            <li>Ensure line exists in master pg_hba.conf and reload master</li>
+                            <pre>host        replication     replication        127.0.0.1/32            md5</pre>
+                            <li>Use pg_basebackup to do a backup of master (as postgres system user)</li>
+                            <ul>
+                                <li><a href="http://www.postgresql.org/docs/9.3/static/app-pgbasebackup.html" target="_blank">http://www.postgresql.org/docs/9.3/static/app-pgbasebackup.html</a></li>
+                                <pre>pg_basebackup -h 127.0.0.1 -U replication -D /var/lib/pgsql/9.3/slave -R -Xs -P -v</pre>
+                            <li>Edit postgresql.conf </li>
+<pre>
+port = 5488 (doesn’t matter when using CentOS init.d)
+hot_standby = on
+</pre>
+                            <li>Edit recovery.conf</li>
+<pre>
+standby_mode = on
+primary_conninfo = 'host=127.0.0.1 port=5432 user=replication password=rep_password'
+trigger_file = '/var/lib/pgsql/9.3/slave/finish.recovery'
+recovery_target_timeline='latest'
+</pre>
+
+                        </ul>
+                        <aside class="notes">
+                            Mention delay settings and what they’re for near the hot_standby setting
+                        </aside>
+                    </section>
+
+
+                    <section>
+                        <h2>Setup Replication - Basic</h2>
+                        <ul>
+                            <li>Production method for CentOS</li>
+                            <li>Create new /etc/init.d/postgresql-9.3 config file for slave</li>
+                            <pre>sudo cp /etc/init.d/postgresql-9.3 /etc/init.d/postgresql-9.3-5488</pre>
+                            <li>Edit config file to change:</li>
+<pre>
+PGPORT=5488 
+PGDATA=/var/lib/pgsql/9.3/slave
+PGLOG=/var/lib/pgsql/9.3/pgstartup-5488.log
+PGUPLOG=/var/lib/pgsql/$PGMAJORVERSION/pgupgrade-5488.log
+</pre>
+                            <li>Register service, start up slave & ensure it connects to master</li>
+<pre>
+sudo chkconfig postgresql-9.3-5488 on
+sudo service postgresql-9.3-5488 start
+</pre>
+                        </ul>
+                    </section>
+
+
+                    <section>
+                        <h2>Setup Replication - Basic</h2>
+                        <ul>
+                            <li>Check slave log to ensure it connected</li>
+                            <pre>started streaming WAL from primary at 0/3000000 on timeline 1</pre>
+                            <li>Check from master</li>
+                            <pre>select * from pg_stat_replication;</pre>
+                            <li>Create an object and make sure it appears on slave</li>
+<pre>training=# CREATE TABLE testing (
+                id serial primary key, 
+                stuff text, 
+                inserted_at timestamptz default now());
+</pre>
+                            <li>Connect to slave</li>
+                            <pre>psql -p 5488</pre>
+                        </ul>
+                    </section>
+
+
+                    <section>
+                        <h2>Setup Replication - Advanced/Hybrid</h2>
+                        <div id="li30">
+                            <ul style="font-size:25px;">
+                                <li>Create a new data directory (as postgres system user)</li>
+<pre>
+mkdir /var/lib/pgsql/9.3/omnislave
+chmod 700 /var/lib/pgsql/9.3/omnislave
+</pre>
+                                <li>Edit master postgresql.conf to set archive_command /w omnipitr-archive</li>
+                                <li>Clone of git repo already in /opt/omnipitr - <a href="https://github.com/omniti-labs/omnipitr" target="_blank">https://github.com/omniti-labs/omnipitr</a></li>
+<pre>
+archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/data 
+  -dl gzip=/var/lib/pgsql/9.3/backups/walarchive 
+  -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-archive-^Y-^m-^d.log -v 
+  -s /var/lib/pgsql/9.3/data/pg_log/state "%p"'
+</pre>
+                                <li>Create a destination folder for the WAL archives</li>
+                                <pre>mkdir /var/lib/pgsql/9.3/backups/walarchive</pre>
+                                <li>Create state folder for omnipitr (used when there are multiple destinations)</li>
+                                <pre>mkdir /var/lib/pgsql/9.3/data/pg_log/state</pre>
+                                <li>CentOS does not install HiRes perl module by default (used by omnipitr)</li>
+                                <pre>sudo yum install perl-Time-HiRes.x86_64</pre>
+                                <li>Reload master to activate new archive_command</li>
+                                <li>Check omnipitr & postgres logs. Check WAL folder for WAL files</li>
+                            </ul>
+                        </div>
+                        <aside class="notes">
+                            Mention pigz as alternative to normal gzip command to improve performance
+                        </aside>
+                    </section>
+
+
+                    <section>
+                        <h2>Setup Replication - Advanced/Hybrid</h2>
+                        <ul style="font-size:25px;">
+                            <li>Use omnipitr-synch to create new slave</li>
+                            <ul>
+                                <li>Does the same as pg_basebackup, but can send to multiple locations in parallel</li>
+                                <li>Quicker rebuilding of old master after failover using rsync</li>
+                                <li>On-the-fly compression/decompression to preserve bandwidth if needed</li>
+                                <li>Uses ssh (no local copy option). sshd server running on VM.</li> 
+                                <li>Create keys for postgres system user</li>
+<pre>
+ssh-keygen -t rsa  (accept all defaults, no password)
+cd ~/.ssh
+cp id_rsa.pub authorized_keys
+ssh localhost (yes)
+</pre>
+<pre>
+/opt/omnipitr/bin/omnipitr-synch -o localhost:/var/lib/pgsql/9.3/omnislave 
+  -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-synch-^Y-^m-^d.log -v
+</pre>
+                                <li>Confirm with all caps “YES”</li>
+                            </ul>
+                            <li>Edit postgresql.conf</li>
+                            <ul>
+                                <li>port=5466 (matters because we’re NOT using init.d)</li>
+                            </ul>
+                        </ul>
+                    </section>
+
+                    
+                    <section>
+                        <h2>Setup Replication - Advanced/Hybrid</h2>
+                        <ul>
+                            <li>Copy other recovery.conf file but add a recovery_command & archive_cleanup_command using omnipitr</li>
+<pre>
+cp /var/lib/pgsql/9.3/slave/recovery.conf /var/lib/pgsql/9.3/omnislave/
+</pre>
+<pre>
+restore_command = '/opt/omnipitr/bin/omnipitr-restore 
+  -D /var/lib/pgsql/9.3/omnislave 
+  -s gzip=/var/lib/pgsql/9.3/backups/walarchive 
+  -l /var/lib/pgsql/9.3/omnislave/pg_log/omnipitr-restore-^Y-^m-^d.log 
+  -f /var/lib/pgsql/9.3/omnislave/finish.recovery 
+  -v -sr %f %p'
+</pre>
+<pre>
+archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup 
+  -a gzip=/var/lib/pgsql/9.3/backups/walarchive 
+  -l /var/lib/pgsql/9.3/omnislave/pg_log/omnipitr-cleanup-^Y-^m-^d.log 
+  -v %r'
+</pre>
+                        </ul>
+                    </section>
+
+
+                    <section>
+                </div>
 
 		</div>
 
