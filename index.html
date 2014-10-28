@@ -33,6 +33,13 @@
 
         <style>
             #li30 li { height:30px; line-height:30px }
+            .reveal .footer {
+                position: absolute;
+                bottom: 1em;
+                left: 1em;
+                font-size: 0.5em;
+                z-index: 1;
+            }
         </style>
 		<!--[if lt IE 9]>
 		<script src="lib/js/html5shiv.js"></script>
@@ -42,23 +49,31 @@
 	<body>
 
 		<div class="reveal">
+            <div class="footer">
+                <a href="#/cmdline">Cmdline</a>
+            </div>
 
 			<!-- Any section element inside of this container is displayed as a slide -->
 			<div class="slides">
-				<section>
-                    <h2>PostgreSQL Administration</h2>
-                    <h4>The OmniTI Way</h4>
-                    <p>
-                    <small>Presented by <a href="http://keithf4.com" target="_blank">Keith Fiske</a> / <a href="http://twitter.com/keithf4" target="_blank">@keithf4</a></small>
-                    </p>
-                    <p>
-                    <small>Database Administrator @ <a href="http://www.omniti.com" target="_blank">OmniTI</a></small>
-                    </p>
-                    <p>
-                    <br/>
-                    <br/>
-                    <small>Follow along at <br/><a href="http://slides.keithf4.com/pgtraining_centos">http://slides.keithf4.com/pgtraining_centos</a></small>
-                    </p>
+                				<section>
+                    <section>
+                        <h2>PostgreSQL Administration</h2>
+                        <h4>The OmniTI Way</h4>
+                        <p>
+                        <small>Presented by <a href="http://keithf4.com" target="_blank">Keith Fiske</a> / <a href="http://twitter.com/keithf4" target="_blank">@keithf4</a></small>
+                        </p>
+                        <p>
+                        <small>Database Administrator @ <a href="http://www.omniti.com" target="_blank">OmniTI</a></small>
+                        </p>
+                        <p>
+                        <br/>
+                        <br/>
+                        <small>Follow along at <br/><a href="http://slides.keithf4.com/pgtraining_centos">http://slides.keithf4.com/pgtraining_centos</a></small>
+                        </p>
+                    </section>
+                    <section id="cmdline">
+                        EMBEDDED COMMANDLINE HERE
+                    </section>
 				</section>
 
 
@@ -128,9 +143,7 @@
                                 <pre>sudo yum install http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm</pre>
                             </ul>
                             <li>Install PostgreSQL 9.3 & Contrib modules</li>
-                                <ul>
-                                    <li>sudo yum install postgresql93-server postgresql93-contrib</li>
-                                </ul>
+                                <pre>sudo yum install postgresql93-server postgresql93-contrib</pre>
                             <li>No clusters automatically created and no initial automatic startup (Redhat policy)</li>
                             <ul>
 <pre>
