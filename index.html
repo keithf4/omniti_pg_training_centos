@@ -232,19 +232,19 @@ sudo service postgresql-9.3 reload
                                 <li>Important initial settings review (most require restart)</li>
                                 <ul >
                                     <li>listen_address  (* - all IPs, whitelist your app servers)</li>
-                                    <li>max_connections (monitor active connections)</li>
+                                    <li>max_connections (monitor active connections, affected by work_mem)</li>
                                     <li>shared_buffers (8GB good starting point)</li>
                                     <li>work_mem (2-5MB good starting point. The more RAM the better.)</li>
                                     <li>maintenance_work_mem (1GB good starting point)</li>
-                                    <li>wal_level = hot_standby</li>
+                                    <li style="color:yellow"><i><b>wal_level = hot_standby</b></i></li>
                                     <li>effective_cache_size (50% RAM good starting point)</li>
-                                    <li>archive_mode = on</li>
-                                    <li>archive_command = ‘/bin/true’</li>
-                                    <li>archive_timeout = 60 (for demo purposes, usually higher)</li>
-                                    <li>max_wal_senders = 3</li>
-                                    <li>wal_keep_segments = 30</li>
-                                    <li>logging_collector = on</li>
-                                    <li>autovacuum_freeze_max_age = 1000000000  (no higher!)</li>
+                                    <li style="color:yellow"><i><b>archive_mode = on</b></i></li>
+                                    <li style="color:yellow"><i><b>archive_command = ‘/bin/true’</b></i></li>
+                                    <li style="color:yellow"><i><b>archive_timeout = 60 (for demo purposes, usually higher)</b></i></li>
+                                    <li style="color:yellow"><i><b>max_wal_senders = 3</b></i></li>
+                                    <li style="color:yellow"><i><b>wal_keep_segments = 30</b></i></li>
+                                    <li style="color:yellow"><i><b>logging_collector = on</b></i></li>
+                                    <li style="color:yellow"><i><b>autovacuum_freeze_max_age = 1000000000  (no higher!)</b></i></li>
                                 </ul>
                             </ul>
                         </div>
@@ -327,12 +327,12 @@ sudo service postgresql-9.3 reload
                             <ul>
                                 <li><a href="http://www.postgresql.org/docs/9.3/static/app-pgbasebackup.html" target="_blank">http://www.postgresql.org/docs/9.3/static/app-pgbasebackup.html</a></li>
                                 <pre>pg_basebackup -h 127.0.0.1 -U replication -D /var/lib/pgsql/9.3/slave -R -Xs -P -v</pre>
-                            <li>Edit postgresql.conf </li>
+                            <li>Edit slave postgresql.conf </li>
 <pre>
 port = 5488 (doesn’t matter when using CentOS init.d)
 hot_standby = on
 </pre>
-                            <li>Edit recovery.conf</li>
+                            <li>Edit slave recovery.conf</li>
 <pre>
 standby_mode = on
 primary_conninfo = 'host=127.0.0.1 port=5432 user=replication password=rep_password'
