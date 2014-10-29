@@ -33,9 +33,9 @@
 
         <style>
             #li30 li { height:30px; line-height:30px }
-            .reveal .footer {
+            .reveal .header {
                 position: absolute;
-                bottom: 1em;
+                top: 1em;
                 left: 1em;
                 font-size: 0.5em;
                 z-index: 1;
@@ -49,7 +49,7 @@
 	<body>
 
 		<div class="reveal">
-            <div class="footer">
+            <div class="header">
                 <a href="#/cmdline">Cmdline</a>
             </div>
 
@@ -140,14 +140,14 @@
                             <ul>
                                 <li>Default for CentOS 6.5 is 8.4.20 (EOL)</li>
                                 <li><a href="http://www.postgresql.org/download/linux/redhat/" target="_blank">http://www.postgresql.org/download/linux/redhat/</a></li>
-                                <pre>sudo yum install http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm</pre>
                             </ul>
+                            <pre>sudo yum install http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm</pre>
                             <li>Install PostgreSQL 9.3 & Contrib modules</li>
                                 <pre>sudo yum install postgresql93-server postgresql93-contrib</pre>
                             <li>No clusters automatically created and no initial automatic startup (Redhat policy)</li>
                             <ul>
 <pre>
-service postgresql-9.3 initdb
+sudo service postgresql-9.3 initdb
 sudo chkconfig postgresql-9.3 on
 sudo service postgresql-9.3 start
 </pre>
@@ -215,6 +215,7 @@ CREATE DATABASE training;
                             <ul>
 <pre>
 training=# select pg_reload_conf();
+    OR
 sudo service postgresql-9.3 reload
 </pre>
                                 <li>Check log file for SIGHUP & config change</li>
