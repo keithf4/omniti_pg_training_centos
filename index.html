@@ -15,7 +15,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 		<link rel="stylesheet" href="css/reveal.min.css">
-		<link rel="stylesheet" href="css/theme/default.css" id="theme">
+		<link rel="stylesheet" href="css/theme/omniti.css" id="theme">
 
 		<!-- For syntax highlighting -->
 		<link rel="stylesheet" href="lib/css/zenburn.css">
@@ -55,7 +55,7 @@
 -->
 			<!-- Any section element inside of this container is displayed as a slide -->
 			<div class="slides">
-                <section>
+                <section data-background="css/theme/omniti_bg_logo.png">
                     <h2>PostgreSQL Administration</h2>
                     <h4>The OmniTI Way</h4>
                     <p>
@@ -72,7 +72,7 @@
                 </section>
 
 
-                <section>
+                <section data-background="css/theme/omniti_bg_logo.png">
                     <h2>OmniTI, Inc</h2>
                     <p>
                     <ul>
@@ -91,7 +91,7 @@
                     </section>
                     
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>What is PostgreSQL?</h2>
                         <ul>
                             <li>Open Source RDBMS</li>
@@ -112,7 +112,7 @@
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Training VM</h2>
                         <ul>
                             <li>Login: training / postgres</li>
@@ -128,7 +128,7 @@
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Installing PostgreSQL</h2>
                         <ul>
                             <li>Setup yum repo for your desired version</li>
@@ -152,7 +152,7 @@ sudo service postgresql-9.3 start
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Create Role & Database</h2>
                         <ul style="font-size:30px">
                             <li>Become postgres system user</li>
@@ -181,7 +181,7 @@ CREATE DATABASE training;
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Configuration - pg_hba.conf</h2>
                         <ul style="font-size:30px;">
                             <li style="margin:0; padding:0"><a href="http://www.postgresql.org/docs/9.3/static/auth-pg-hba-conf.html" target="_blank">http://www.postgresql.org/docs/9.3/static/auth-pg-hba-conf.html</a></li>
@@ -201,11 +201,11 @@ CREATE DATABASE training;
                     </section>
 
                     
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Configuration - pg_hba.conf</h2>
                         <ul>
                             <li>Create following line for later:</li>
-                            <pre>host        replication     replication        127.0.0.1/32            md5</pre>
+                            <pre>host    replication    replication    127.0.0.1/32    md5</pre>
                             <li>Only requires a reload to put new HBA settings into place</li>
                             <ul>
 <pre>
@@ -219,7 +219,7 @@ sudo service postgresql-9.3 reload
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Configuration - postgresql.conf</h2>
                         <div id="li30">
                             <ul style="font-size:25px;">
@@ -231,15 +231,15 @@ sudo service postgresql-9.3 reload
                                     <li>shared_buffers (8GB good starting point)</li>
                                     <li>work_mem (2-5MB good starting point. The more RAM the better.)</li>
                                     <li>maintenance_work_mem (1GB good starting point)</li>
-                                    <li style="color:yellow"><i><b>wal_level = hot_standby</b></i></li>
+                                    <li style="color:orange"><i><b>wal_level = hot_standby</b></i></li>
                                     <li>effective_cache_size (50% RAM good starting point)</li>
-                                    <li style="color:yellow"><i><b>archive_mode = on</b></i></li>
-                                    <li style="color:yellow"><i><b>archive_command = ‘/bin/true’</b></i></li>
-                                    <li style="color:yellow"><i><b>archive_timeout = 60 (for demo purposes, usually higher)</b></i></li>
-                                    <li style="color:yellow"><i><b>max_wal_senders = 3</b></i></li>
-                                    <li style="color:yellow"><i><b>wal_keep_segments = 30</b></i></li>
-                                    <li style="color:yellow"><i><b>logging_collector = on</b></i></li>
-                                    <li style="color:yellow"><i><b>autovacuum_freeze_max_age = 1000000000  (no higher!)</b></i></li>
+                                    <li style="color:orange"><i><b>archive_mode = on</b></i></li>
+                                    <li style="color:orange"><i><b>archive_command = ‘/bin/true’</b></i></li>
+                                    <li style="color:orange"><i><b>archive_timeout = 60 (for demo purposes, usually higher)</b></i></li>
+                                    <li style="color:orange"><i><b>max_wal_senders = 3</b></i></li>
+                                    <li style="color:orange"><i><b>wal_keep_segments = 30</b></i></li>
+                                    <li style="color:orange"><i><b>logging_collector = on</b></i></li>
+                                    <li style="color:orange"><i><b>autovacuum_freeze_max_age = 1000000000  (no higher!)</b></i></li>
                                 </ul>
                             </ul>
                         </div>
@@ -249,7 +249,7 @@ sudo service postgresql-9.3 reload
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Configuration - postgresql.conf</h2>
                         <div id="li30">
                             <ul style="font-size:25px;">
@@ -283,7 +283,7 @@ sudo service postgresql-9.3 reload
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Vacuums & Freezing</h2>
                         <div id="li30">
                             <ul style="font-size:25px;">
@@ -316,7 +316,7 @@ sudo service postgresql-9.3 reload
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Setup Replication - Basic</h2>
                         <ul style="font-size:30px;">
                             <li>Ensure line exists in master pg_hba.conf and reload master</li>
@@ -345,7 +345,7 @@ recovery_target_timeline='latest'
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Setup Replication - Basic</h2>
                         <ul>
                             <li>Production method for CentOS</li>
@@ -367,7 +367,7 @@ sudo service postgresql-9.3-5488 start
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Setup Replication - Basic</h2>
                         <ul>
                             <li>Check slave log to ensure it connected</li>
@@ -386,7 +386,7 @@ sudo service postgresql-9.3-5488 start
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Setup Replication - Advanced/Hybrid</h2>
                         <div id="li30">
                             <ul style="font-size:25px;">
@@ -419,7 +419,7 @@ archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/data
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Setup Replication - Advanced/Hybrid</h2>
                         <ul style="font-size:25px;">
                             <li>Use omnipitr-synch to create new slave</li>
@@ -449,7 +449,7 @@ ssh localhost (yes)
                     </section>
 
                     
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Setup Replication - Advanced/Hybrid</h2>
                         <ul>
                             <li>Copy other recovery.conf file but add a recovery_command & archive_cleanup_command using omnipitr</li>
@@ -474,7 +474,7 @@ archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Setup Replication - Advanced/Hybrid</h2>
                         <ul style="font-size:25px;">
                             <li>Start new cluster using manual method instead of new initi.d script</li>
@@ -499,7 +499,7 @@ archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Non-streaming Replication (pre-9.0)</h2>
                         <ul>
                             <li>Remove/comment out “primary_conninfo” line from omnislave recovery.conf</li>
@@ -511,7 +511,7 @@ archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>A Note on SELinux</h2>
                         <ul>
                             <li>Enabled by default in CentOS 6.5</li>
@@ -536,7 +536,7 @@ sudo setsebool -P postgresql_can_rsync on
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Backup - pg_dump/all</h2>
                         <div id="li30">
                             <ul style="font-size:25px;">
@@ -562,7 +562,7 @@ sudo setsebool -P postgresql_can_rsync on
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Backup - File System</h2>
                         <div id="li30">
                             <ul style="font-size:25px;">
@@ -595,7 +595,7 @@ archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/data
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Restore - pg_restore</h2>
                         <div id="li30">
                             <ul style="font-size:25px;">
@@ -627,7 +627,7 @@ pg_restore -p 5444 -d new_training -v training.pgr
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Restore - File System</h2>
                         <div id="li30">
                             <ul style="font-size:25px;">
@@ -652,7 +652,7 @@ cd data
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Slave Lag</h2>
                         <div id="li30">
                             <ul style="font-size:25px;">
@@ -689,7 +689,7 @@ FROM pg_stat_replication;
                     </section>
 
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Monitoring</h2>
                         <div id="li30">
                             <ul style="font-size:25px;">
@@ -722,7 +722,7 @@ FROM pg_stat_replication;
                     </section>
                     
 
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Upgrading</h2>
                         <ul>
                             <li>Dump/Restore</li>
@@ -747,12 +747,12 @@ FROM pg_stat_replication;
 
 
                     <!--
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Failover</h2>
 
                     </section>
                     -->
-                    <section>
+                    <section data-background="css/theme/omniti_bg_logo.png">
                         <h1>Final Questions?</h1>
                     </section>
 <!--
