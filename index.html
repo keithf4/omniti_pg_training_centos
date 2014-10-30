@@ -500,13 +500,18 @@ archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup
 
 
                     <section data-background="css/theme/omniti_bg_logo.png">
-                        <h2>Non-streaming Replication (pre-9.0)</h2>
+                        <h2>Non-streaming Replication</h2>
                         <ul>
                             <li>Remove/comment out “primary_conninfo” line from omnislave recovery.conf</li>
                             <li>Remove “-sr” flag from restore_command</li>
-                            <li>Restart slave</li>
+                            <li>Restart slave (as postgres user)</li>
                             <pre>/usr/pgsql-9.3/bin/pg_ctl restart -m fast -D /var/lib/pgsql/9.3/omnislave/</pre>
                             <li>archive_timeout of master determines how far behind slave could possibly be</li>
+                            <li>--recovery-delay (-w) option to omnipitr-restore can force slave to lag behind a specified period of time</li>
+                            <ul>
+                                <li>Recovery slave to quickly undo mistakes</li>
+                            </ul>
+                            <li>Only method of replication pre 9.0</li>
                         </ul>
                     </section>
 
