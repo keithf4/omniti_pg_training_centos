@@ -402,13 +402,11 @@ sudo service postgresql-9.3-5488 start
 mkdir /var/lib/pgsql/9.3/omnislave
 chmod 700 /var/lib/pgsql/9.3/omnislave
 </pre>
-                                <li>Edit master postgresql.conf to set archive_command /w omnipitr-archive</li>
+                                <li>Edit master postgresql.conf to set archive_command /w omnipitr-archive (ensure it's a single line)</li>
                                 <li>Clone of git repo already in /opt/omnipitr - <a href="https://github.com/omniti-labs/omnipitr" target="_blank">https://github.com/omniti-labs/omnipitr</a></li>
 <pre>
-archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/data 
-  -dl gzip=/var/lib/pgsql/9.3/backups/walarchive 
-  -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-archive-^Y-^m-^d.log -v 
-  -s /var/lib/pgsql/9.3/data/pg_log/state "%p"'
+archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/data -dl gzip=/var/lib/pgsql/9.3/backups/walarchive 
+  -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-archive-^Y-^m-^d.log -v -s /var/lib/pgsql/9.3/data/pg_log/state "%p"'
 </pre>
                                 <li>Create a destination folder for the WAL archives</li>
                                 <pre>mkdir /var/lib/pgsql/9.3/backups/walarchive</pre>
@@ -443,8 +441,7 @@ cp id_rsa.pub authorized_keys
 ssh localhost (yes)
 </pre>
 <pre>
-/opt/omnipitr/bin/omnipitr-synch -o localhost:/var/lib/pgsql/9.3/omnislave 
-  -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-synch-^Y-^m-^d.log -v
+/opt/omnipitr/bin/omnipitr-synch -o localhost:/var/lib/pgsql/9.3/omnislave -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-synch-^Y-^m-^d.log -v
 </pre>
                                 <li>Confirm with all caps “YES”</li>
                             </ul>
@@ -464,18 +461,10 @@ ssh localhost (yes)
 cp /var/lib/pgsql/9.3/slave/recovery.conf /var/lib/pgsql/9.3/omnislave/
 </pre>
 <pre>
-restore_command = '/opt/omnipitr/bin/omnipitr-restore 
-  -D /var/lib/pgsql/9.3/omnislave 
-  -s gzip=/var/lib/pgsql/9.3/backups/walarchive 
-  -l /var/lib/pgsql/9.3/omnislave/pg_log/omnipitr-restore-^Y-^m-^d.log 
-  -f /var/lib/pgsql/9.3/omnislave/finish.recovery 
-  -v -sr %f %p'
+restore_command = '/opt/omnipitr/bin/omnipitr-restore -D /var/lib/pgsql/9.3/omnislave -s gzip=/var/lib/pgsql/9.3/backups/walarchive -l /var/lib/pgsql/9.3/omnislave/pg_log/omnipitr-restore-^Y-^m-^d.log -f /var/lib/pgsql/9.3/omnislave/finish.recovery -v -sr %f %p'
 </pre>
 <pre>
-archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup 
-  -a gzip=/var/lib/pgsql/9.3/backups/walarchive 
-  -l /var/lib/pgsql/9.3/omnislave/pg_log/omnipitr-cleanup-^Y-^m-^d.log 
-  -v %r'
+archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup -a gzip=/var/lib/pgsql/9.3/backups/walarchive -l /var/lib/pgsql/9.3/omnislave/pg_log/omnipitr-cleanup-^Y-^m-^d.log -v %r'
 </pre>
                         </ul>
                     </section>
@@ -585,12 +574,9 @@ sudo setsebool -P postgresql_can_rsync on
                                 <li>Omnipitr</li>
                                 <ul>
                                     <li>Set dst-backup (-db) option in archive_command (location does not exist)</li>
-    <pre style="font-size:18px">
-    archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/data
-      -dl gzip=/var/lib/pgsql/9.3/backups/walarchive 
-      -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-archive-^Y-^m-^d.log -v 
-      -s /var/lib/pgsql/9.3/data/pg_log/state -db /var/lib/pgsql/9.3/backups/dst-backup "%p"'
-    </pre>
+<pre style="font-size:18px">
+archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/data -dl gzip=/var/lib/pgsql/9.3/backups/walarchive -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-archive-^Y-^m-^d.log -v -s /var/lib/pgsql/9.3/data/pg_log/state -db /var/lib/pgsql/9.3/backups/dst-backup "%p"'
+</pre>
                                     <ul>
                                         <li>When backup is run, this dir is created to hold WAL files needed for consistent backup</li>
                                         <li>Same use as -X option to pg_basebackup</li>
@@ -599,12 +585,9 @@ sudo setsebool -P postgresql_can_rsync on
                                     <li>Need to install Perl SHA library (as training user)</li>
     <pre style="font-size:18px">sudo yum install perl-Digest-SHA.x86_64</pre>
                                     <li>Run omnipitr-backup-master (as postgres system user)</li>
-    <pre style="font-size:18px">
-    /opt/omnipitr/bin/omnipitr-backup-master -D /var/lib/pgsql/9.3/data 
-      -x /var/lib/pgsql/9.3/backups/dst-backup -dl gzip=/var/lib/pgsql/9.3/backups 
-      -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-backup-master-^Y-^m-^d.log 
-      -v -dg SHA-512
-    </pre>
+<pre style="font-size:18px">
+/opt/omnipitr/bin/omnipitr-backup-master -D /var/lib/pgsql/9.3/data -x /var/lib/pgsql/9.3/backups/dst-backup -dl gzip=/var/lib/pgsql/9.3/backups -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-backup-master-^Y-^m-^d.log -v -dg SHA-512
+</pre>
                                 </ul>
                             </ul>    
                         </div>
@@ -688,17 +671,13 @@ FROM pg_stat_replication;
                                     <ul>
                                         <li>Create state directory owned by postgres - /var/log/omnipitr</li>
 <pre style="font-size:18px">
-/opt/omnipitr/bin/omnipitr-monitor -c last-restore-age 
-  -l /var/lib/pgsql/9.3/omnislave/pg_log/omnipitr-restore-^Y-^m-^d.log 
-  -s /var/log/omnipitr/
+/opt/omnipitr/bin/omnipitr-monitor -c last-restore-age -l /var/lib/pgsql/9.3/omnislave/pg_log/omnipitr-restore-^Y-^m-^d.log -s /var/log/omnipitr/
 </pre>
                                     </ul>
                                 </ul>
                                 <li>Backup monitor if using omnipitr-backup</li>
 <pre style="font-size:18px">
-/opt/omnipitr/bin/omnipitr-monitor -c last-backup-age 
-  -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-backup-master-^Y-^m-^d.log 
-  -s /var/log/omnipitr/
+/opt/omnipitr/bin/omnipitr-monitor -c last-backup-age -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-backup-master-^Y-^m-^d.log -s /var/log/omnipitr/
 </pre>
                             </ul>
                         </div>
