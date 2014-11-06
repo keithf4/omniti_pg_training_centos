@@ -405,8 +405,7 @@ chmod 700 /var/lib/pgsql/9.3/omnislave
                                 <li>Edit master postgresql.conf to set archive_command /w omnipitr-archive (ensure it's a single line)</li>
                                 <li>Clone of git repo already in /opt/omnipitr - <a href="https://github.com/omniti-labs/omnipitr" target="_blank">https://github.com/omniti-labs/omnipitr</a></li>
 <pre>
-archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/data -dl gzip=/var/lib/pgsql/9.3/backups/walarchive 
-  -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-archive-^Y-^m-^d.log -v -s /var/lib/pgsql/9.3/data/pg_log/state "%p"'
+archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/data -dl gzip=/var/lib/pgsql/9.3/backups/walarchive -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-archive-^Y-^m-^d.log -v -s /var/lib/pgsql/9.3/data/pg_log/state "%p"'
 </pre>
                                 <li>Create a destination folder for the WAL archives</li>
                                 <pre>mkdir /var/lib/pgsql/9.3/backups/walarchive</pre>
@@ -475,7 +474,7 @@ archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup -a gzip=/var/lib/p
 
                     <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Setup Replication - Advanced/Hybrid</h2>
-                        <ul style="font-size:25px;">
+                        <ul id="li30" style="font-size:25px;">
                             <li>Start new cluster using manual method instead of new initi.d script</li>
                             <ul>
                                 <li>As postgres system user</li>
@@ -489,7 +488,7 @@ archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup -a gzip=/var/lib/p
                             <ul>
                                 <li>Replays WAL archives first using restore_command</li>
                                 <li>Connects to primary for streaming replication</li>
-                                <li>Sees it’s streaming replication, so omnipitr-restore kills itself</li>
+                                <li>Sees it’s streaming replication, so omnipitr-restore -sr option allows restore_command to exit cleanly despite throwing an error that it can't find the next WAL file. Otherwise would be stuck in loop until restore_command successfully replayed a WAL file.</li>
                             </ul>
                         </ul>
                         <aside class="notes">
@@ -579,7 +578,7 @@ sudo setsebool -P postgresql_can_rsync on
                                 </ul>
                                 <li>Omnipitr</li>
                                 <ul>
-                                    <li>Set dst-backup (-db) option in archive_command (location does not exist)</li>
+                                    <li>Set dst-backup (-db) option in master archive_command (location does not exist)</li>
 <pre style="font-size:18px">
 archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/data -dl gzip=/var/lib/pgsql/9.3/backups/walarchive -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-archive-^Y-^m-^d.log -v -s /var/lib/pgsql/9.3/data/pg_log/state -db /var/lib/pgsql/9.3/backups/dst-backup "%p"'
 </pre>
@@ -609,7 +608,7 @@ archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/data
 mkdir mydb
 /usr/pgsql-9.3/bin/initdb -D /home/training/mydb
 Edit port in postgresql.conf - port = 5444
-/usr/pgsql-9.3/bin/pg_ctl -D /home/training/mydb start
+/usr/pgsql-9.3/bin/pg_ctl start -D /home/training/mydb
 </pre>
                                 <li>Automatically made role “training”</li>
                                 <li>psql used to restore pg_dumpall or plaintext version of pg_dump</li>
@@ -626,7 +625,7 @@ pg_restore -p 5444 -d new_training -v training.pgr
                                 <li>Smaller backups & more flexible restore</li>
                                 <li>Must recreate all indexes & constraints</li>
                                 <li>Stop this instance</li>
-                                <pre style="font-size:18px">/usr/pgsql-9.3/bin/pg_ctl stop -m fast -D mydb</pre>
+                                <pre style="font-size:18px">/usr/pgsql-9.3/bin/pg_ctl stop -m fast -D /home/training/mydb</pre>
                             </ul>
                         </div>
                     </section>
