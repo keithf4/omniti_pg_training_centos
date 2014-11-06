@@ -439,6 +439,7 @@ ssh-keygen -t rsa  (accept all defaults, no password)
 cd ~/.ssh
 cp id_rsa.pub authorized_keys
 ssh localhost (yes)
+exit
 </pre>
 <pre>
 /opt/omnipitr/bin/omnipitr-synch -o localhost:/var/lib/pgsql/9.3/omnislave -l /var/lib/pgsql/9.3/data/pg_log/omnipitr-synch-^Y-^m-^d.log -v
@@ -466,6 +467,8 @@ restore_command = '/opt/omnipitr/bin/omnipitr-restore -D /var/lib/pgsql/9.3/omni
 <pre>
 archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup -a gzip=/var/lib/pgsql/9.3/backups/walarchive -l /var/lib/pgsql/9.3/omnislave/pg_log/omnipitr-cleanup-^Y-^m-^d.log -v %r'
 </pre>
+                        <li>Also update trigger file to point to a different location (just in case)</li>
+                        <pre>trigger_file = '/var/lib/pgsql/9.3/omnislave/finish.recovery'</pre>
                         </ul>
                     </section>
 
@@ -475,7 +478,7 @@ archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup -a gzip=/var/lib/p
                         <ul style="font-size:25px;">
                             <li>Start new cluster using manual method instead of new initi.d script</li>
                             <ul>
-                                <li>Become postgres system user</li>
+                                <li>As postgres system user</li>
                                 <pre style="font-size:18px">/usr/pgsql-9.3/bin/pg_ctl start -D /var/lib/pgsql/9.3/omnislave</pre>
                                 <li>Will not autostart on boot</li>
                                 <li>Cannot connect to this slave (hot_standby = off in postgresql.conf)</li>
@@ -497,8 +500,8 @@ archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup -a gzip=/var/lib/p
 
                     <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Non-streaming Replication</h2>
-                        <ul>
-                            <li>Remove/comment out “primary_conninfo” line from omnislave recovery.conf</li>
+                        <ul style="font-size:25px;">
+                            <li>Comment out “primary_conninfo” line from omnislave recovery.conf</li>
                             <li>Remove “-sr” flag from restore_command</li>
                             <li>Restart slave (as postgres user)</li>
                             <pre>/usr/pgsql-9.3/bin/pg_ctl restart -m fast -D /var/lib/pgsql/9.3/omnislave/</pre>
@@ -508,6 +511,9 @@ archive_cleanup_command = '/opt/omnipitr/bin/omnipitr-cleanup -a gzip=/var/lib/p
                                 <li>Recovery slave to quickly undo mistakes</li>
                             </ul>
                             <li>Only method of replication pre 9.0</li>
+
+                            <li>UNDO ABOVE CHANGES</li>
+                            <li>Restart slave again and ensure it connected to primary</li>
                         </ul>
                     </section>
 
@@ -741,7 +747,7 @@ select max_connections
                 , coalesce(sum(case when state = 'idle' then 1 else 0 end),0) as idle
                 , coalesce(sum(case when state = 'idle in transaction' then 1 else 0 end),0) as idle_in_txn 
                 from pg_stat_activity()) 
-        x join (select setting::float AS max_connections FROM pg_settings WHERE name = 'max_connections') xx ON (true)
+        x join (select setting::float AS max_connections FROM pg_settings WHERE name = 'max_connections') xx ON (true);
                                 </pre>
                             </ul>
                         </section>
@@ -895,12 +901,45 @@ WHERE
                     </section>
 
 
-                    <!--
                     <section data-background="css/theme/omniti_bg_logo.png">
                         <h2>Failover</h2>
+                        <ul id="li30" style="font-size:30px;">
+                            <li>Will be failing over to the first slave we made (/var/lib/pgsql/9.3/slave/)
+                            <li>Ensure failover slave has same archive_command set as the original master but with appropriate path settings (would typically be the same if on different servers).</li>
+                            <ul>
+                                <li>Make new state folder for omnipitr</li>
+                                <pre>mkdir /var/lib/pgsql/9.3/slave/pg_log/state</pre>
+                            </ul>
+<pre style="font-size:18px">
+archive_command = '/opt/omnipitr/bin/omnipitr-archive -D /var/lib/pgsql/9.3/slave -dl gzip=/var/lib/pgsql/9.3/backups/walarchive -l /var/lib/pgsql/9.3/slave/pg_log/omnipitr-archive-^Y-^m-^d.log -v -s /var/lib/pgsql/9.3/slave/pg_log/state -db /var/lib/pgsql/9.3/backups/dst-backup "%p"'
+</pre>
+                            <li>Reload slave config to turn on new archive command</li>
+<pre>
+psql -p 5488
+select pg_reload_conf();
+</pre>
+                            <li>Check that it's in place</li>
+                            <pre>show archive_command;</pre>
+                            <li>Archive command is only called if postgresql is in master mode</li>
+                        </ul>
+                    </section>
+                    <section>
+                        <h2>Failover</h2>
+                        <ul>
+                            <li>Stop the master database or deny access (avoid split-brain)</li>
+                            <pre>sudo service postgresql-9.3 stop</pre>
+                            <li>Check slave logs. Should see connection errors</li>
+                            <li>Touch failover file for first slave we made</li>
+                            <pre>touch /var/lib/pgsql/9.3/slave/finish.recovery</pre>
+                            <li>Edit recovery.conf in omnislave to point to new master</li>
+                            <pre>primary_conninfo = 'user=replication password=password host=127.0.0.1 port=5488'</pre>
+                            <li>Restart omnislave</li>
+                            <pre>/usr/pgsql-9.3/bin/pg_ctl restart -D /var/lib/pgsql/9.3/omnislave</pre>
+                            <li>Check omnislave log to see if it reconnected to new primary</li>
+                        </ul>
 
                     </section>
-                    -->
+
                     <section data-background="css/theme/omniti_bg_logo.png">
                         <h1>Final Questions?</h1>
                     </section>
